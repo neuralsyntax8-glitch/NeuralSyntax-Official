@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog | Neural Syntax</title>
+  <style>
+    :root {
+      --bg-dark: #0d1117;
+      --card-bg: #161b22;
+      --text-primary: #c9d1d9;
+      --text-secondary: #8b949e;
+      --accent-blue: #58a6ff;
+      --border-color: #30363d;
+      --hover-border: #58a6ff;
+    }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #fff, var(--accent-blue));
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    #blog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 30px;
+    }
+    .post-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .post-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--hover-border);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    .post-banner {
+      height: 220px;
+      background-size: cover;
+      background-position: center;
+      background-color: #1e2a3a;
+      pointer-events: none;
+    }
+    .post-content {
+      padding: 20px;
+      flex: 1;
+    }
+    .post-content h2 {
+      font-size: 1.5rem;
+      margin: 0 0 10px;
+      color: white;
+    }
+    .post-content p {
+      color: var(--text-secondary);
+      margin: 0;
+    }
+    .loader, .error {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--accent-blue);
+      font-size: 1.2rem;
+    }
+    .error {
+      color: #f85149;
+    }
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Neural Syntax Blog</h1>
+  </header>
+  <div id="blog-grid">
+    <div class="loader">📡 Loading posts...</div>
+  </div>
+  <footer>© Neural Syntax — insights on AI & technology</footer>
+</div>
+
+<script>
+  const API_KEY = "AIzaSyBwZqjDw8BqI5H-hLqqclcR_-o-izOusYw";
+const BLOG_URL = "https://neuralsyntaxofficial.blogspot.com";
+
+async function loadPosts() {
+  const grid = document.getElementById("blog-grid");
+
+  try {
+    // Step 1: Get Blog ID
+    const blogRes = await fetch(
+      `https://www.googleapis.com/blogger/v3/blogs/byurl?url=${BLOG_URL}&key=${API_KEY}`
+    );
+    const blogData = await blogRes.json();
+
+    const blogId = blogData.id;
+
+    // Step 2: Get Posts
+    const postRes = await fetch(
+      `https://www.googleapis.com/blogger/v3/blogs/${blogId}/posts?key=${API_KEY}&maxResults=12`
+    );
+    const postData = await postRes.json();
+
+    if (!postData.items || postData.items.length === 0) {
+      grid.innerHTML = `<div class="error">📭 No posts available.</div>`;
+      return;
+    }
+
+    grid.innerHTML = "";
+
+    postData.items.forEach((post) => {
+      const title = post.title;
+      const postId = post.id;
+
+      // Extract image from content
+      let img = "";
+      const imgMatch = post.content.match(/<img[^>]+src="([^">]+)"/);
+      if (imgMatch) {
+        img = imgMatch[1];
+      } else {
+        img =
+          "https://via.placeholder.com/800x400?text=No+Image";
+      }
+
+      // Clean summary
+      let summary = post.content.replace(/<[^>]*>/g, "").trim();
+      if (summary.length > 140) {
+        summary = summary.slice(0, 140) + "…";
+      }
+
+      const card = `
+        <a href="blog.html?id=${postId}" class="post-card">
+          <div class="post-banner" style="background-image: url('${img}');"></div>
+          <div class="post-content">
+            <h2>${escapeHtml(title)}</h2>
+            <p>${escapeHtml(summary)}</p>
+          </div>
+        </a>
+      `;
+
+      grid.innerHTML += card;
+    });
+
+  } catch (error) {
+    console.error(error);
+    grid.innerHTML = `<div class="error">❌ Failed to load posts.</div>`;
+  }
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Run function
+loadPosts();
+</script>
+</body>
+</html>
